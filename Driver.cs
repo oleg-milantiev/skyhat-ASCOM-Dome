@@ -4,13 +4,14 @@
 //
 // Description:	ASCOM драйвер мотокрышки SkyHat
 //
-// Implements:	ASCOM Dome interface version: 1.7
+// Implements:	ASCOM Dome interface version: 1.8
 // Author:		(mo) Oleg Milantiev <oleg@milantiev.com>
 //
 // Edit Log:
 //
 // Date			Who	Vers	Description
 // -----------	---	-----	-------------------------------------------------------
+// 29-10-2020	mo	1.8.0   Добавил стабильности
 // 08-09-2020	mo	1.7.0   Версия с парой моторов
 // 17-04-2020	mo	1.2.0	Initial edit, created from ASCOM driver template
 // --------------------------------------------------------------------------------
@@ -121,29 +122,14 @@ namespace ASCOM.SkyHat
         {
             LogMessage("SetupDialog", "Start");
 
-// не понял, нафига это предупреждение
-//            if (IsConnected)
-//                System.Windows.Forms.MessageBox.Show("Already connected, just press OK");
-
-            if (Properties.Settings.Default.ComPortString != "")
-            {
-                if (SerialConnect())
-                {
-                    LogMessage("SetupDialog Connected:", "objSerial.Connected = true");
-                    connectedState = true;
-
-                    // wait for time specified in DelayOnConnect
-                    //System.Threading.Thread.Sleep(1000);
-
-                    LogMessage("SetupDialog Connected", Convert.ToString(serial.Connected));
-
-                    SerialCommand_GetEEPROM();
-                }
-            }
+            // не понял, нафига это предупреждение
+            //            if (IsConnected)
+            //                System.Windows.Forms.MessageBox.Show("Already connected, just press OK");
 
             using (SetupDialogForm F = new SetupDialogForm(this))
             {
                 var result = F.ShowDialog();
+
                 if (result == System.Windows.Forms.DialogResult.OK)
                 {
                     Properties.Settings.Default.Save();
@@ -153,10 +139,40 @@ namespace ASCOM.SkyHat
                         LogMessage("SetupDialog", "Fail to write config to eeprom");
                         System.Windows.Forms.MessageBox.Show("Fail to write config to controller");
                     }
-                    
+
                     SerialDisconnect();
                 }
             }
+
+            /*
+            if (Properties.Settings.Default.ComPortString != "")
+            {
+                LogMessage("SetupDialog", "Try to connect");
+
+                if (SerialConnect())
+                {
+                    connectedState = true;
+
+                    // wait for time specified in DelayOnConnect
+                    //System.Threading.Thread.Sleep(1000);
+
+                    LogMessage("SetupDialog Connected", Convert.ToString(serial.Connected));
+
+                    if (SerialCommand_GetEEPROM())
+                    {
+                        LogMessage("SetupDialog", "Got EEPROM values");
+                    }
+                    else
+                    {
+                        LogMessage("SetupDialog", "Cant get EEPROM values!");
+
+                        SerialDisconnect();
+                    }
+
+                   
+                }
+            }
+*/
         }
 
         public ArrayList SupportedActions
@@ -372,8 +388,17 @@ namespace ASCOM.SkyHat
 
             byte[] serialBuf = new byte[7];
 
-            serialBuf = serial.ReceiveCountedBinary(8);
-            LogMessage("serialCommandGet: Receive serial package", "Length:" + serialBuf.Length.ToString());
+            try
+            {
+                serialBuf = serial.ReceiveCountedBinary(8);
+                LogMessage("serialCommandGet: Receive serial package", "Length:" + serialBuf.Length.ToString());
+            }
+            catch (Exception Ex)
+            {
+                LogMessage("SerialCommand_GetEEPROM", "Timeout receiving EEPROM data");
+
+                return false;
+            }
 
             //- byte start = 0xEE
             //- byte, first: какая крышка едет первой при открытии (при закрытии наоборот). Параметр: 'l' (левая, по-умолчанию) или 'r' (правая).
@@ -421,15 +446,14 @@ namespace ASCOM.SkyHat
                 return false;
             }
 
-            serial.DTREnable = false;
-            serial.RTSEnable = false;
-
-            serial.ReceiveTimeout = 5;
-            serial.ReceiveTimeoutMs = 5000;
-
-
             try
             {
+                serial.DTREnable = false;
+                serial.RTSEnable = false;
+
+                serial.ReceiveTimeout = 5;
+                serial.ReceiveTimeoutMs = 5000;
+
                 serial.Connected = true;
                 LogMessage("Connected: ", "serial.Connected is success");
 
@@ -455,18 +479,19 @@ namespace ASCOM.SkyHat
         }
 
 
-        private void SerialDisconnect()
+        public void SerialDisconnect()
         {
-            LogMessage("Connected Set", "Disconnecting from port " + Properties.Settings.Default.ComPortString);
+            LogMessage("SerialDisconnect", "Disconnecting from port " + Properties.Settings.Default.ComPortString);
+
             serial.Connected = false;
             connectedState = false;
             serial.DTREnable = false;
             serial.RTSEnable = false;
-            LogMessage("Connected", "Disconnecting from port " + Properties.Settings.Default.ComPortString);
-            Properties.Settings.Default.Save();
+            //Properties.Settings.Default.Save();
+            
             serial.Dispose();
+            serial = new Serial();
         }
-
 
         
         public bool Connected
@@ -499,8 +524,19 @@ namespace ASCOM.SkyHat
 
                         LogMessage("Connected", Convert.ToString(serial.Connected));
 
-                        SerialCommand_GetEEPROM();
-                        SerialCommand_Get();
+                        if (!SerialCommand_GetEEPROM())
+                        {
+                            SerialDisconnect();
+
+                            return;
+                        }
+
+                        if (!SerialCommand_Get())
+                        {
+                            SerialDisconnect();
+
+                            return;
+                        }
                     }
                 }
                 else
@@ -525,8 +561,8 @@ namespace ASCOM.SkyHat
             get
             {
                 Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                // TODO customise this driver description
-                string driverInfo = "Information about the driver itself. Version: " + String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
+                string driverInfo = "SkyHat ASCOM Driver. Version: " + String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
+
                 LogMessage("DriverInfo Get", driverInfo);
                 return driverInfo;
             }

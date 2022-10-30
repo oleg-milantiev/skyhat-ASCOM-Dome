@@ -8,3 +8,14 @@ C:\files\Продукты\Мотомаска\ASCOM\SkyHat\obj\Debug\ASCOM.SkyHat
 C:\files\Продукты\Мотомаска\ASCOM\SkyHat\obj\Debug\SkyHat.csproj.GenerateResource.Cache
 C:\files\Продукты\Мотомаска\ASCOM\SkyHat\obj\Debug\ASCOM.SkyHat.Dome.dll
 C:\files\Продукты\Мотомаска\ASCOM\SkyHat\obj\Debug\ASCOM.SkyHat.Dome.pdb
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\bin\Debug\ASCOM.SkyHat.Dome.dll.config
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\bin\Debug\ASCOM.SkyHat.Dome.dll
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\bin\Debug\ASCOM.SkyHat.Dome.pdb
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\bin\Debug\ASCOM.SkyHat.Dome.tlb
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\obj\Debug\SkyHat.csproj.AssemblyReference.cache
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\obj\Debug\ASCOM.SkyHat.Properties.Resources.resources
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\obj\Debug\ASCOM.SkyHat.SetupDialogForm.resources
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\obj\Debug\SkyHat.csproj.GenerateResource.cache
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\obj\Debug\SkyHat.csproj.CoreCompileInputs.cache
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\obj\Debug\ASCOM.SkyHat.Dome.dll
+C:\files\Продукты\SkyHat\ASCOM\SkyHat\obj\Debug\ASCOM.SkyHat.Dome.pdb

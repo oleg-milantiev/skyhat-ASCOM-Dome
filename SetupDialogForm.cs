@@ -19,6 +19,8 @@ namespace ASCOM.SkyHat
         {
             dome = _dome;
 
+            Dome.LogMessage("SetupDialogForm", "start");
+
             InitializeComponent();
             // Initialise current values of user settings from the ASCOM Profile
             InitUI();
@@ -66,16 +68,15 @@ namespace ASCOM.SkyHat
 
         private void InitUI()
         {
+            Dome.LogMessage("SetupDialogForm InitUI", "start");
             chkTrace.Checked = Dome.tl.Enabled;
-            // set the list of com ports to those that are currently available
-            comboBoxComPort.Items.Clear();
-            comboBoxComPort.Items.AddRange(System.IO.Ports.SerialPort.GetPortNames());      // use System.IO because it's static
-            // select the current port if possible
-            if (comboBoxComPort.Items.Contains(Properties.Settings.Default.ComPortString))
-            {
-                comboBoxComPort.SelectedItem = Properties.Settings.Default.ComPortString;
-                comboBoxComPort_SelectedIndexChanged(null, null);
-            }
+
+            refresh.Font = new Font("Wingdings 3", 20, FontStyle.Bold);
+            refresh.Text = Char.ConvertFromUtf32(80); // or 80
+            refresh.Width = 35;
+            refresh.Height = 35;
+
+            refreshCom();
         }
 
         private void moveLeft_CheckedChanged(object sender, EventArgs e)
@@ -98,8 +99,34 @@ namespace ASCOM.SkyHat
 
         private void comboBoxComPort_SelectedIndexChanged(object sender, EventArgs e)
         {
-            Properties.Settings.Default.ComPortString = comboBoxComPort.SelectedItem.ToString();
+            Dome.LogMessage("SetupDialogForm comPort Changed", "start");
+            Properties.Settings.Default.ComPortString = comboBoxComPort.SelectedItem.ToString();            
+        }
 
+        private void refresh_Click(object sender, EventArgs e)
+        {
+            refreshCom();
+        }
+
+        private void refreshCom()
+        {
+            Dome.LogMessage("SetupDialogForm refreshCom", "start");
+
+            // set the list of com ports to those that are currently available
+            comboBoxComPort.Items.Clear();
+            comboBoxComPort.Items.AddRange(System.IO.Ports.SerialPort.GetPortNames());      // use System.IO because it's static
+            // select the current port if possible
+            if (comboBoxComPort.Items.Contains(Properties.Settings.Default.ComPortString))
+            {
+                Dome.LogMessage("SetupDialogForm refreshCom", "set active port");
+
+                comboBoxComPort.SelectedItem = Properties.Settings.Default.ComPortString;
+ //               comboBoxComPort_SelectedIndexChanged(null, null);
+            }
+        }
+
+        private void buttonConnect_Click(object sender, EventArgs e)
+        {
             try
             {
                 dome.SerialConnect();
@@ -114,7 +141,14 @@ namespace ASCOM.SkyHat
 
                     Dome.LogMessage("SetupDialog Connected", Convert.ToString(dome.serial.Connected));
 
-                    dome.SerialCommand_GetEEPROM();
+                    if (!dome.SerialCommand_GetEEPROM())
+                    {
+                        MessageBox.Show("SetupDialog: No SkyHat at port " + dome.serial.PortName + ". Please choose another");
+
+                        dome.SerialDisconnect();
+
+                        return;
+                    }
 
                     moveLeft.Enabled = true;
                     moveRight.Enabled = true;
@@ -141,10 +175,16 @@ namespace ASCOM.SkyHat
                     threshold.Value = Properties.Settings.Default.Threshold;
                     maxSpeed.Value = Properties.Settings.Default.MaxSpeed;
                     velocity.Value = Properties.Settings.Default.Velocity;
+
+                    buttonConnect.Enabled = false;
+                    comboBoxComPort.Enabled = false;
+                    refresh.Enabled = false;
                 }
             }
             catch (Exception ex)
             {
+                Dome.LogMessage("SetupDialog Exception", ex.Message);
+
                 moveLeft.Enabled = false;
                 moveRight.Enabled = false;
                 moveBoth.Enabled = false;
@@ -157,6 +197,10 @@ namespace ASCOM.SkyHat
                 threshold.Enabled = false;
                 maxSpeed.Enabled = false;
                 velocity.Enabled = false;
+
+                buttonConnect.Enabled = true;
+                comboBoxComPort.Enabled = true;
+                refresh.Enabled = true;
             }
         }
     }

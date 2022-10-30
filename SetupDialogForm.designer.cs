@@ -59,6 +59,8 @@
             this.timeout = new System.Windows.Forms.NumericUpDown();
             this.label6 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
+            this.refresh = new System.Windows.Forms.Button();
+            this.buttonConnect = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.brightness)).BeginInit();
@@ -103,7 +105,8 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(271, 38);
             this.label1.TabIndex = 2;
-            this.label1.Text = "MO SkyFlat Telescope  motorised cap\r\nASCOM Driver";
+            this.label1.Text = "MO SkyHat Telescope motorised cap\r\nASCOM Driver";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // picASCOM
             // 
@@ -126,14 +129,14 @@
             this.label2.Location = new System.Drawing.Point(16, 66);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(77, 17);
+            this.label2.Size = new System.Drawing.Size(34, 17);
             this.label2.TabIndex = 5;
-            this.label2.Text = "Comm Port";
+            this.label2.Text = "Port";
             // 
             // chkTrace
             // 
             this.chkTrace.AutoSize = true;
-            this.chkTrace.Location = new System.Drawing.Point(255, 64);
+            this.chkTrace.Location = new System.Drawing.Point(316, 64);
             this.chkTrace.Margin = new System.Windows.Forms.Padding(4);
             this.chkTrace.Name = "chkTrace";
             this.chkTrace.Size = new System.Drawing.Size(87, 21);
@@ -144,10 +147,10 @@
             // comboBoxComPort
             // 
             this.comboBoxComPort.FormattingEnabled = true;
-            this.comboBoxComPort.Location = new System.Drawing.Point(102, 62);
+            this.comboBoxComPort.Location = new System.Drawing.Point(58, 62);
             this.comboBoxComPort.Margin = new System.Windows.Forms.Padding(4);
             this.comboBoxComPort.Name = "comboBoxComPort";
-            this.comboBoxComPort.Size = new System.Drawing.Size(119, 24);
+            this.comboBoxComPort.Size = new System.Drawing.Size(89, 24);
             this.comboBoxComPort.TabIndex = 7;
             this.comboBoxComPort.SelectedIndexChanged += new System.EventHandler(this.comboBoxComPort_SelectedIndexChanged);
             // 
@@ -427,11 +430,33 @@
             this.label3.TabIndex = 6;
             this.label3.Text = "First Hat part move:";
             // 
+            // refresh
+            // 
+            this.refresh.Location = new System.Drawing.Point(244, 56);
+            this.refresh.Name = "refresh";
+            this.refresh.Size = new System.Drawing.Size(72, 23);
+            this.refresh.TabIndex = 9;
+            this.refresh.Text = "button1";
+            this.refresh.UseVisualStyleBackColor = true;
+            this.refresh.Click += new System.EventHandler(this.refresh_Click);
+            // 
+            // buttonConnect
+            // 
+            this.buttonConnect.Location = new System.Drawing.Point(154, 63);
+            this.buttonConnect.Name = "buttonConnect";
+            this.buttonConnect.Size = new System.Drawing.Size(75, 23);
+            this.buttonConnect.TabIndex = 10;
+            this.buttonConnect.Text = "Connect";
+            this.buttonConnect.UseVisualStyleBackColor = true;
+            this.buttonConnect.Click += new System.EventHandler(this.buttonConnect_Click);
+            // 
             // SetupDialogForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(489, 453);
+            this.Controls.Add(this.buttonConnect);
+            this.Controls.Add(this.refresh);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.comboBoxComPort);
             this.Controls.Add(this.chkTrace);
@@ -498,5 +523,7 @@
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.TrackBar brightness;
         private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Button refresh;
+        private System.Windows.Forms.Button buttonConnect;
     }
 }
