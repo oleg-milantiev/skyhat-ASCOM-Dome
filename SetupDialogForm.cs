@@ -35,13 +35,18 @@ namespace ASCOM.SkyHat
 
             Dome.tl.Enabled = chkTrace.Checked;
 
-            Properties.Settings.Default.First = firstLeft.Checked ? 'l' : 'r';
-            Properties.Settings.Default.Move = moveLeft.Checked ? 'l' : (moveRight.Checked ? 'r' : 'a');
-            Properties.Settings.Default.Timeout = (int)timeout.Value;
-            Properties.Settings.Default.Brightness = (int)brightness.Value;
-            Properties.Settings.Default.Threshold = (int)threshold.Value;
-            Properties.Settings.Default.MaxSpeed  = (int) maxSpeed.Value;
-            Properties.Settings.Default.Velocity  = (int) velocity.Value;
+            if (dome.connectedState)
+            {
+                Properties.Settings.Default.First = firstLeft.Checked ? 'l' : 'r';
+                Properties.Settings.Default.Move = moveLeft.Checked ? 'l' : (moveRight.Checked ? 'r' : 'a');
+                Properties.Settings.Default.Timeout = (int)timeout.Value;
+                Properties.Settings.Default.Brightness = (int)brightness.Value;
+                Properties.Settings.Default.Threshold = (int)threshold.Value;
+                Properties.Settings.Default.MaxSpeed = (int)maxSpeed.Value;
+                Properties.Settings.Default.Velocity = (int)velocity.Value;
+
+                dome.SerialDisconnect();
+            }
         }
 
         private void cmdCancel_Click(object sender, EventArgs e) // Cancel button event handler

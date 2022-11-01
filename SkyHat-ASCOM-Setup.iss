@@ -6,8 +6,8 @@
 [Setup]
 AppID={{6f9b5058-6251-49f3-a830-a577333d0981}
 AppName=ASCOM SkyHat Dome Driver
-AppVerName=ASCOM SkyHat Dome Driver 1.8
-AppVersion=1.8.0
+AppVerName=ASCOM SkyHat Dome Driver 1.8.1
+AppVersion=1.8.1
 AppPublisher=Oleg Milantiev <oleg@milantiev.com>
 AppPublisherURL=mailto:oleg@milantiev.com
 AppSupportURL=http://tech.groups.yahoo.com/group/ASCOM-Talk/
@@ -18,7 +18,7 @@ DefaultDirName="{cf}\ASCOM\Dome"
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 OutputDir="."
-OutputBaseFilename="SkyHat-1.8-ASCOM-Setup"
+OutputBaseFilename="SkyHat-1.8.1-ASCOM-Setup"
 Compression=lzma
 SolidCompression=yes
 ; Put there by Platform if Driver Installer Support selected

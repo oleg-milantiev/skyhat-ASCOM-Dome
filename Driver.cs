@@ -45,6 +45,12 @@ namespace ASCOM.SkyHat
     [ClassInterface(ClassInterfaceType.None)]
     public class Dome : IDomeV2
     {
+        internal const int DEBUG = 1;
+        // 0 - none
+        // 1 - info
+        // 2 - verbose
+        // 3 - debug
+
         /// <summary>
         /// ASCOM DeviceID (COM ProgID) for this driver.
         /// The DeviceID is used by ASCOM applications to load the driver at runtime.
@@ -241,7 +247,11 @@ namespace ASCOM.SkyHat
             try
             {
                 serial.ClearBuffers();
-                LogMessage("serialSend", "Start");
+                
+                if (DEBUG >= 3)
+                {
+                    LogMessage("serialSend", "Start");
+                }
             }
             catch (NotConnectedException Ex)     // objSerial.ClearBuffers();
             {
@@ -344,31 +354,27 @@ namespace ASCOM.SkyHat
             //- byte stop = 0x00
 
             current = serialBuf[1];
-            LogMessage("SerialCommand_Get: current", current.ToString());
-
             timeout = serialBuf[2];
-            LogMessage("SerialCommand_Get: timeout", timeout.ToString());
-
             moveLeftTo = serialBuf[3];
-            LogMessage("SerialCommand_Get: moveLeftTo", moveLeftTo.ToString());
-
             moveRightTo = serialBuf[4];
-            LogMessage("SerialCommand_Get: moveRightTo", moveRightTo.ToString());
-
             statusLeft = serialBuf[5];
-            LogMessage("SerialCommand_Get: statusLeft", statusLeft.ToString());
-
             statusRight = serialBuf[6];
-            LogMessage("SerialCommand_Get: statusRight", statusRight.ToString());
-
             statusLight = serialBuf[7];
-            LogMessage("SerialCommand_Get: statusLight", statusLight.ToString());
-
             speedLeft = serialBuf[8];
-            LogMessage("SerialCommand_Get: speedLeft", speedLeft.ToString());
-
             speedRight = serialBuf[9];
-            LogMessage("SerialCommand_Get: speedRight", speedRight.ToString());
+
+            if (DEBUG >= 3)
+            {
+                LogMessage("SerialCommand_Get: current", current.ToString());
+                LogMessage("SerialCommand_Get: timeout", timeout.ToString());
+                LogMessage("SerialCommand_Get: moveLeftTo", moveLeftTo.ToString());
+                LogMessage("SerialCommand_Get: moveRightTo", moveRightTo.ToString());
+                LogMessage("SerialCommand_Get: statusLeft", statusLeft.ToString());
+                LogMessage("SerialCommand_Get: statusRight", statusRight.ToString());
+                LogMessage("SerialCommand_Get: statusLight", statusLight.ToString());
+                LogMessage("SerialCommand_Get: speedLeft", speedLeft.ToString());
+                LogMessage("SerialCommand_Get: speedRight", speedRight.ToString());
+            }
 
             return true;
         }
@@ -410,22 +416,21 @@ namespace ASCOM.SkyHat
             //- byte stop = 0x00
 
             Properties.Settings.Default.First = (char) serialBuf[1];
-            LogMessage("SerialCommand_Get_EEPROM: first", Properties.Settings.Default.First.ToString());
-
             Properties.Settings.Default.Timeout = serialBuf[2];
-            LogMessage("SerialCommand_Get_EEPROM: Timeout", Properties.Settings.Default.Timeout.ToString());
-
             Properties.Settings.Default.Brightness = serialBuf[3];
-            LogMessage("SerialCommand_Get_EEPROM: Brightness", Properties.Settings.Default.Brightness.ToString());
-
             Properties.Settings.Default.Threshold = serialBuf[4];
-            LogMessage("SerialCommand_Get_EEPROM: Threshold", Properties.Settings.Default.Threshold.ToString());
-
             Properties.Settings.Default.MaxSpeed = serialBuf[5];
-            LogMessage("SerialCommand_Get_EEPROM: MaxSpeed", Properties.Settings.Default.MaxSpeed.ToString());
-
             Properties.Settings.Default.Velocity = serialBuf[6];
-            LogMessage("SerialCommand_Get_EEPROM: Velocity", Properties.Settings.Default.Velocity.ToString());
+
+            if (DEBUG >= 3)
+            {
+                LogMessage("SerialCommand_Get_EEPROM: first", Properties.Settings.Default.First.ToString());
+                LogMessage("SerialCommand_Get_EEPROM: Timeout", Properties.Settings.Default.Timeout.ToString());
+                LogMessage("SerialCommand_Get_EEPROM: Brightness", Properties.Settings.Default.Brightness.ToString());
+                LogMessage("SerialCommand_Get_EEPROM: Threshold", Properties.Settings.Default.Threshold.ToString());
+                LogMessage("SerialCommand_Get_EEPROM: MaxSpeed", Properties.Settings.Default.MaxSpeed.ToString());
+                LogMessage("SerialCommand_Get_EEPROM: Velocity", Properties.Settings.Default.Velocity.ToString());
+            }
 
             Properties.Settings.Default.Save();
 
@@ -498,7 +503,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("Connected", "Get {0}", IsConnected);
+                if (DEBUG >= 3)
+                {
+                    LogMessage("Connected", "Get {0}", IsConnected);
+                }
+
                 return IsConnected;
             }
             set
@@ -615,7 +624,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("Altitude Get", "Not implemented");
+                if (DEBUG >= 3)
+                {
+                    LogMessage("Altitude Get", "Not implemented");
+                }
+
                 throw new ASCOM.PropertyNotImplementedException("Altitude", false);
             }
         }
@@ -624,7 +637,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("AtHome Get", "Not implemented");
+                if (DEBUG >= 3)
+                {
+                    LogMessage("AtHome Get", "Not implemented");
+                }
+
                 throw new ASCOM.PropertyNotImplementedException("AtHome", false);
             }
         }
@@ -633,7 +650,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("AtPark Get", "Not implemented");
+                if (DEBUG >= 3)
+                {
+                    LogMessage("AtPark Get", "Not implemented");
+                }
+
                 throw new ASCOM.PropertyNotImplementedException("AtPark", false);
             }
         }
@@ -642,7 +663,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("Azimuth Get", "Not implemented");
+                if (DEBUG >= 3)
+                {
+                    LogMessage("Azimuth Get", "Not implemented");
+                }
+
                 throw new ASCOM.PropertyNotImplementedException("Azimuth", false);
             }
         }
@@ -651,7 +676,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("CanFindHome Get", false.ToString());
+                if (DEBUG >= 3)
+                {
+                    LogMessage("CanFindHome Get", false.ToString());
+                }
+
                 return false;
             }
         }
@@ -660,7 +689,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("CanPark Get", false.ToString());
+                if (DEBUG >= 3)
+                {
+                    LogMessage("CanPark Get", false.ToString());
+                }
+
                 return false;
             }
         }
@@ -669,7 +702,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("CanSetAltitude Get", false.ToString());
+                if (DEBUG >= 3)
+                {
+                    LogMessage("CanSetAltitude Get", false.ToString());
+                }
+
                 return false;
             }
         }
@@ -678,7 +715,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("CanSetAzimuth Get", false.ToString());
+                if (DEBUG >= 3)
+                {
+                    LogMessage("CanSetAzimuth Get", false.ToString());
+                }
+
                 return false;
             }
         }
@@ -687,7 +728,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("CanSetPark Get", false.ToString());
+                if (DEBUG >= 3)
+                {
+                    LogMessage("CanSetPark Get", false.ToString());
+                }
+
                 return false;
             }
         }
@@ -696,7 +741,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("CanSetShutter Get", true.ToString());
+                if (DEBUG >= 3)
+                {
+                    LogMessage("CanSetShutter Get", true.ToString());
+                }
+
                 return true;
             }
         }
@@ -705,7 +754,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("CanSlave Get", false.ToString());
+                if (DEBUG >= 3)
+                {
+                    LogMessage("CanSlave Get", false.ToString());
+                }
+
                 return false;
             }
         }
@@ -714,7 +767,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("CanSyncAzimuth Get", false.ToString());
+                if (DEBUG >= 3)
+                {
+                    LogMessage("CanSyncAzimuth Get", false.ToString());
+                }
+
                 return false;
             }
         }
@@ -753,87 +810,78 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("ShutterStatus Get", false.ToString());
-
                 SerialCommand_Get();
 
                 switch (Properties.Settings.Default.Move)
                 {
                     case 'l':
-                        switch (statusLeft)
+                        switch (moveLeftTo)
                         {
-                            case (byte)'u': // начальный непонятный статус
-                                switch (moveLeftTo)
+                            case (byte)'s':
+                                switch (statusLeft)
                                 {
-                                    case (byte)'s':
-                                        LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
-                                        return ShutterState.shutterError;
+                                    case (byte)'c':
+                                        LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
+                                        return ShutterState.shutterClosed;
 
                                     case (byte)'o':
-                                        LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
-                                        return ShutterState.shutterOpening;
+                                        LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
+                                        return ShutterState.shutterOpen;
 
-                                    case (byte)'c':
-                                        LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
-                                        return ShutterState.shutterClosing;
+                                    // case (byte)'g': // не может быть GAP при открытии только одной створки
+                                    // case (byte)'t': // ошибка таймаута
+                                    // case (byte)'u': // начальный непонятный статус
+                                    default:
+                                        LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+                                        return ShutterState.shutterError;
                                 }
-                                break;
-
-                            case (byte)'c':
-                                LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
-                                return ShutterState.shutterClosed;
 
                             case (byte)'o':
-                                LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
-                                return ShutterState.shutterOpen;
+                                LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
+                                return ShutterState.shutterOpening;
 
-                            default:
-//                            case (byte)'g': // не может быть GAP при открытии только одной створки
-//                            case (byte)'t': // ошибка таймаута
-                                LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
-                                return ShutterState.shutterError;
-
+                            case (byte)'c':
+                                LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
+                                return ShutterState.shutterClosing;
                         }
                         break;
 
                     case 'r':
-                        switch (statusRight)
+                        switch (moveRightTo)
                         {
-                            case (byte)'u': // начальный непонятный статус
-                                switch (moveRightTo)
+                            case (byte)'s':
+                                switch (statusRight)
                                 {
-                                    case (byte)'s':
-                                        LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
-                                        return ShutterState.shutterError;
+                                    case (byte)'c':
+                                        LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
+                                        return ShutterState.shutterClosed;
 
                                     case (byte)'o':
-                                        LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
-                                        return ShutterState.shutterOpening;
+                                        LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
+                                        return ShutterState.shutterOpen;
 
-                                    case (byte)'c':
-                                        LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
-                                        return ShutterState.shutterClosing;
+                                    // case (byte)'g': // не может быть GAP при открытии только одной створки
+                                    // case (byte)'t': // ошибка таймаута
+                                    // case (byte)'u': // начальный непонятный статус
+                                    default:
+                                        LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+                                        return ShutterState.shutterError;
                                 }
-                                break;
-
-                            case (byte)'c':
-                                LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
-                                return ShutterState.shutterClosed;
 
                             case (byte)'o':
-                                LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
-                                return ShutterState.shutterOpen;
+                                LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
+                                return ShutterState.shutterOpening;
 
-                            default:
-//                            case (byte)'g': // не может быть GAP при открытии только одной створки
-//                            case (byte)'t': // ошибка таймаута
-                                LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
-                                return ShutterState.shutterError;
-
+                            case (byte)'c':
+                                LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
+                                return ShutterState.shutterClosing;
                         }
+
                         break;
 
                     case 'a':
+                        // TODO сделал left и right створки. Не проверял both
+
                         if ((statusLeft == 't') || (statusRight == 't'))
                         {
                             LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
@@ -879,7 +927,10 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("Slaved Get", false.ToString());
+                if (DEBUG >= 3) { 
+                    LogMessage("Slaved Get", false.ToString());
+                }
+
                 return false;
             }
             set
@@ -905,7 +956,11 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                LogMessage("Slewing Get", false.ToString());
+                if (DEBUG >= 3)
+                {
+                    LogMessage("Slewing Get", false.ToString());
+                }
+
                 return false;
             }
         }
