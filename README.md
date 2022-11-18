@@ -1,6 +1,6 @@
 # ASTRONOMY Motorized Cap
 
-## ASCOM driver
+## ASCOM driver (Dome)
 
 http://skyhat.milantiev.com/
 
