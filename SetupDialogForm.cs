@@ -22,7 +22,6 @@ namespace ASCOM.SkyHat
             Dome.LogMessage("SetupDialogForm", "start");
 
             InitializeComponent();
-            // Initialise current values of user settings from the ASCOM Profile
             InitUI();
         }
 
@@ -34,19 +33,6 @@ namespace ASCOM.SkyHat
                 Properties.Settings.Default.ComPortString = "(None)";
 
             Dome.tl.Enabled = chkTrace.Checked;
-
-            if (dome.connectedState)
-            {
-                Properties.Settings.Default.First = firstLeft.Checked ? 'l' : 'r';
-                Properties.Settings.Default.Move = moveLeft.Checked ? 'l' : (moveRight.Checked ? 'r' : 'a');
-                Properties.Settings.Default.Timeout = (int)timeout.Value;
-                Properties.Settings.Default.Brightness = (int)brightness.Value;
-                Properties.Settings.Default.Threshold = (int)threshold.Value;
-                Properties.Settings.Default.MaxSpeed = (int)maxSpeed.Value;
-                Properties.Settings.Default.Velocity = (int)velocity.Value;
-
-                dome.SerialDisconnect();
-            }
         }
 
         private void cmdCancel_Click(object sender, EventArgs e) // Cancel button event handler
@@ -76,30 +62,7 @@ namespace ASCOM.SkyHat
             Dome.LogMessage("SetupDialogForm InitUI", "start");
             chkTrace.Checked = Dome.tl.Enabled;
 
-            refresh.Font = new Font("Wingdings 3", 20, FontStyle.Bold);
-            refresh.Text = Char.ConvertFromUtf32(80); // or 80
-            refresh.Width = 35;
-            refresh.Height = 35;
-
             refreshCom();
-        }
-
-        private void moveLeft_CheckedChanged(object sender, EventArgs e)
-        {
-            firstLeft.Enabled = false;
-            firstRight.Enabled = false;
-        }
-
-        private void moveRight_CheckedChanged(object sender, EventArgs e)
-        {
-            firstLeft.Enabled = false;
-            firstRight.Enabled = false;
-        }
-
-        private void moveBoth_CheckedChanged(object sender, EventArgs e)
-        {
-            firstLeft.Enabled = true;
-            firstRight.Enabled = true;
         }
 
         private void comboBoxComPort_SelectedIndexChanged(object sender, EventArgs e)
@@ -155,32 +118,6 @@ namespace ASCOM.SkyHat
                         return;
                     }
 
-                    moveLeft.Enabled = true;
-                    moveRight.Enabled = true;
-                    moveBoth.Enabled = true;
-
-                    timeout.Enabled = true;
-                    brightness.Enabled = true;
-                    threshold.Enabled = true;
-                    maxSpeed.Enabled = true;
-                    velocity.Enabled = true;
-
-                    moveLeft.Checked = (Properties.Settings.Default.Move == 'l');
-                    moveRight.Checked = (Properties.Settings.Default.Move == 'r');
-                    moveBoth.Checked = (Properties.Settings.Default.Move == 'a');
-
-                    firstLeft.Checked = (Properties.Settings.Default.First == 'l');
-                    firstRight.Checked = (Properties.Settings.Default.First == 'r');
-
-                    firstLeft.Enabled = moveBoth.Checked;
-                    firstRight.Enabled = moveBoth.Checked;
-
-                    timeout.Value = Properties.Settings.Default.Timeout;
-                    brightness.Value = Properties.Settings.Default.Brightness;
-                    threshold.Value = Properties.Settings.Default.Threshold;
-                    maxSpeed.Value = Properties.Settings.Default.MaxSpeed;
-                    velocity.Value = Properties.Settings.Default.Velocity;
-
                     buttonConnect.Enabled = false;
                     comboBoxComPort.Enabled = false;
                     refresh.Enabled = false;
@@ -189,19 +126,6 @@ namespace ASCOM.SkyHat
             catch (Exception ex)
             {
                 Dome.LogMessage("SetupDialog Exception", ex.Message);
-
-                moveLeft.Enabled = false;
-                moveRight.Enabled = false;
-                moveBoth.Enabled = false;
-
-                firstLeft.Enabled = false;
-                firstRight.Enabled = false;
-
-                timeout.Enabled = false;
-                brightness.Enabled = false;
-                threshold.Enabled = false;
-                maxSpeed.Enabled = false;
-                velocity.Enabled = false;
 
                 buttonConnect.Enabled = true;
                 comboBoxComPort.Enabled = true;

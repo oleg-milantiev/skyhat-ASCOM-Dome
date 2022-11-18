@@ -4,20 +4,18 @@
 //
 // Description:	ASCOM драйвер мотокрышки SkyHat
 //
-// Implements:	ASCOM Dome interface version: 1.8
+// Implements:	ASCOM Dome interface version: 2.0
 // Author:		(mo) Oleg Milantiev <oleg@milantiev.com>
 //
 // Edit Log:
 //
 // Date			Who	Vers	Description
 // -----------	---	-----	-------------------------------------------------------
+// 18-11-2022	mo	2.0.0   Все настройки вынес в Windows App
 // 29-10-2020	mo	1.8.0   Добавил стабильности
 // 08-09-2020	mo	1.7.0   Версия с парой моторов
 // 17-04-2020	mo	1.2.0	Initial edit, created from ASCOM driver template
 // --------------------------------------------------------------------------------
-//
-// @todo
-// - не обслуживать Abort, когда нет движения. Не выдавать error
 
 
 #define Dome
@@ -27,6 +25,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using ASCOM;
 using ASCOM.Astrometry;
@@ -45,7 +44,7 @@ namespace ASCOM.SkyHat
     [ClassInterface(ClassInterfaceType.None)]
     public class Dome : IDomeV2
     {
-        internal const int DEBUG = 1;
+        internal const int DEBUG = 3;
         // 0 - none
         // 1 - info
         // 2 - verbose
@@ -102,13 +101,15 @@ namespace ASCOM.SkyHat
             tl.Enabled = true;
             Properties.Settings.Default.Reload();
 
-            LogMessage("Dome", "Starting initialisation");
+            if (DEBUG >= 3)
+                LogMessage("Dome", "Starting initialisation");
 
             connectedState = false; // Initialise connected to false
             utilities = new Util(); //Initialise util object
             astroUtilities = new AstroUtils(); // Initialise astro utilities object
 
-            LogMessage("Dome", "Completed initialisation");
+            if (DEBUG >= 3)
+                LogMessage("Dome", "Completed initialisation");
         }
 
 
@@ -126,11 +127,8 @@ namespace ASCOM.SkyHat
         /// </summary>
         public void SetupDialog()
         {
-            LogMessage("SetupDialog", "Start");
-
-            // не понял, нафига это предупреждение
-            //            if (IsConnected)
-            //                System.Windows.Forms.MessageBox.Show("Already connected, just press OK");
+            if (DEBUG >= 1)
+                LogMessage("SetupDialog", "Start");
 
             using (SetupDialogForm F = new SetupDialogForm(this))
             {
@@ -140,45 +138,10 @@ namespace ASCOM.SkyHat
                 {
                     Properties.Settings.Default.Save();
 
-                    if (!SerialConnect() || !SerialCommand_SetEEPROM())
-                    {
-                        LogMessage("SetupDialog", "Fail to write config to eeprom");
-                        System.Windows.Forms.MessageBox.Show("Fail to write config to controller");
-                    }
-
                     SerialDisconnect();
                 }
             }
 
-            /*
-            if (Properties.Settings.Default.ComPortString != "")
-            {
-                LogMessage("SetupDialog", "Try to connect");
-
-                if (SerialConnect())
-                {
-                    connectedState = true;
-
-                    // wait for time specified in DelayOnConnect
-                    //System.Threading.Thread.Sleep(1000);
-
-                    LogMessage("SetupDialog Connected", Convert.ToString(serial.Connected));
-
-                    if (SerialCommand_GetEEPROM())
-                    {
-                        LogMessage("SetupDialog", "Got EEPROM values");
-                    }
-                    else
-                    {
-                        LogMessage("SetupDialog", "Cant get EEPROM values!");
-
-                        SerialDisconnect();
-                    }
-
-                   
-                }
-            }
-*/
         }
 
         public ArrayList SupportedActions
@@ -238,7 +201,6 @@ namespace ASCOM.SkyHat
             astroUtilities = null;
         }
 
-
         private bool serialSend(byte[] package)
         {
             if (!serial.Connected)
@@ -249,9 +211,7 @@ namespace ASCOM.SkyHat
                 serial.ClearBuffers();
                 
                 if (DEBUG >= 3)
-                {
                     LogMessage("serialSend", "Start");
-                }
             }
             catch (NotConnectedException Ex)     // objSerial.ClearBuffers();
             {
@@ -294,36 +254,57 @@ namespace ASCOM.SkyHat
             return true;
         }
 
-
-        private bool SerialCommand_SetEEPROM()
-        {
-            return serialSend(new byte[] { (byte)'c', (byte)'s', 
-                (byte) Properties.Settings.Default.First,
-                (byte) Properties.Settings.Default.Timeout,
-                (byte) Properties.Settings.Default.Brightness,
-                (byte) Properties.Settings.Default.Threshold,
-                (byte) Properties.Settings.Default.MaxSpeed,
-                (byte) Properties.Settings.Default.Velocity,
-            });
-        }
-
-
         private bool SerialCommand_Close()
         {
-            return serialSend(new byte[] { (byte)'c', (byte)'c', (byte)Properties.Settings.Default.Move });
+            return serialSend(new byte[] { (byte)'c', (byte)'c', (byte)'a' });
         }
-
 
         private bool SerialCommand_Open()
         {
-            return serialSend(new byte[] { (byte)'c', (byte)'o', (byte)Properties.Settings.Default.Move });
+            return serialSend(new byte[] { (byte)'c', (byte)'o', (byte)'a' });
         }
-
         
         private bool SerialCommand_Abort()
         {
             return serialSend(new byte[] { (byte)'c', (byte)'a' });
         }
+
+        /// <summary>
+        /// Отсылает команду GET на устройство. Данные помещает в this.*
+        /// </summary>
+        public bool SerialCommand_GetEEPROM()
+        {
+            if (!serialSend(new byte[] { (byte)'c', (byte)'e' }))
+            {
+                return false;
+            }
+
+            byte[] serialBuf = new byte[14];
+
+            serialBuf = serial.ReceiveCountedBinary(14);
+
+            if (DEBUG >= 2)
+                LogMessage("serialCommandGetEEPROM: Receive serial package", "Length:" + serialBuf.Length.ToString());
+
+            //- byte start = 0xEE
+            //- byte, current: Текущий ток в ADU датчика
+            //- byte, timeout: Остаток (в секундах) до наступления ошибки по таймауту
+            //- byte, moveLeftTo: Куда движется левый мотор ('c', 'o' или 's')
+            //- byte, moveRightTo: Куда движется правый мотор ('c', 'o' или 's')
+            //- byte, statusLeft: Статус левой крышки, см. ниже
+            //- byte, statusRight: Статус правой крышки, см. ниже
+            //- byte, light: Статус лампочки 1/0
+            //- byte, speedLeft: скорость левой крышки
+            //- byte, speedRight: скорость левой крышки
+            //- byte stop = 0x00
+
+            part = (char) serialBuf[1];
+            // ignore package tail
+
+            return true;
+        }
+
+        private char part;
 
 
         /// <summary>
@@ -339,7 +320,9 @@ namespace ASCOM.SkyHat
             byte[] serialBuf = new byte[11];
 
             serialBuf = serial.ReceiveCountedBinary(11);
-            LogMessage("serialCommandGet: Receive serial package", "Length:" + serialBuf.Length.ToString());
+
+            if (DEBUG >= 2)
+                LogMessage("serialCommandGet: Receive serial package", "Length:" + serialBuf.Length.ToString());
 
             //- byte start = 0xEE
             //- byte, current: Текущий ток в ADU датчика
@@ -379,64 +362,7 @@ namespace ASCOM.SkyHat
             return true;
         }
 
-        //TODO сейчас не используются
         byte current, timeout, moveLeftTo, moveRightTo, speedLeft, speedRight;
-
-        /// <summary>
-        /// Отсылает команду GET_EEPROM на устройство. Данные помещает в Properties.Settings.Default.*
-        /// </summary>
-        public bool SerialCommand_GetEEPROM()
-        {
-            if (!serialSend(new byte[] { (byte)'c', (byte)'e' }))
-            {
-                return false;
-            }
-
-            byte[] serialBuf = new byte[7];
-
-            try
-            {
-                serialBuf = serial.ReceiveCountedBinary(8);
-                LogMessage("serialCommandGet: Receive serial package", "Length:" + serialBuf.Length.ToString());
-            }
-            catch (Exception Ex)
-            {
-                LogMessage("SerialCommand_GetEEPROM", "Timeout receiving EEPROM data");
-
-                return false;
-            }
-
-            //- byte start = 0xEE
-            //- byte, first: какая крышка едет первой при открытии (при закрытии наоборот). Параметр: 'l' (левая, по-умолчанию) или 'r' (правая).
-            //- byte, timeout: задание таймаута движения крышки в секундах. Параметр: число секунд (3, например)
-            //- byte, brightness: яркость EL Panel (0..255)
-            //- byte, threshold: задание порога срабатывания датчика тока. Параметр: число порога (25, например)
-            //- byte, maxSpeed: задание максимальной скорости мотора в ШИМ 0..255. Параметр: число скорости (255, например)
-            //- byte, velocity: ускорение (скорость разгона). Параметр: число ускорения (5, например)
-            //- byte stop = 0x00
-
-            Properties.Settings.Default.First = (char) serialBuf[1];
-            Properties.Settings.Default.Timeout = serialBuf[2];
-            Properties.Settings.Default.Brightness = serialBuf[3];
-            Properties.Settings.Default.Threshold = serialBuf[4];
-            Properties.Settings.Default.MaxSpeed = serialBuf[5];
-            Properties.Settings.Default.Velocity = serialBuf[6];
-
-            if (DEBUG >= 3)
-            {
-                LogMessage("SerialCommand_Get_EEPROM: first", Properties.Settings.Default.First.ToString());
-                LogMessage("SerialCommand_Get_EEPROM: Timeout", Properties.Settings.Default.Timeout.ToString());
-                LogMessage("SerialCommand_Get_EEPROM: Brightness", Properties.Settings.Default.Brightness.ToString());
-                LogMessage("SerialCommand_Get_EEPROM: Threshold", Properties.Settings.Default.Threshold.ToString());
-                LogMessage("SerialCommand_Get_EEPROM: MaxSpeed", Properties.Settings.Default.MaxSpeed.ToString());
-                LogMessage("SerialCommand_Get_EEPROM: Velocity", Properties.Settings.Default.Velocity.ToString());
-            }
-
-            Properties.Settings.Default.Save();
-
-            return true;
-        }
-
 
         public bool SerialConnect()
         {
@@ -453,13 +379,15 @@ namespace ASCOM.SkyHat
 
             try
             {
-                serial.DTREnable = false;
-                serial.RTSEnable = false;
+                serial.DTREnable = true;
+                serial.RTSEnable = true;
 
                 serial.ReceiveTimeout = 5;
                 serial.ReceiveTimeoutMs = 5000;
 
                 serial.Connected = true;
+                Thread.Sleep(2000);
+
                 LogMessage("Connected: ", "serial.Connected is success");
 
                 return true;
@@ -483,7 +411,6 @@ namespace ASCOM.SkyHat
             }
         }
 
-
         public void SerialDisconnect()
         {
             LogMessage("SerialDisconnect", "Disconnecting from port " + Properties.Settings.Default.ComPortString);
@@ -492,21 +419,17 @@ namespace ASCOM.SkyHat
             connectedState = false;
             serial.DTREnable = false;
             serial.RTSEnable = false;
-            //Properties.Settings.Default.Save();
             
             serial.Dispose();
             serial = new Serial();
         }
-
         
         public bool Connected
         {
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("Connected", "Get {0}", IsConnected);
-                }
 
                 return IsConnected;
             }
@@ -557,7 +480,6 @@ namespace ASCOM.SkyHat
 
         public string Description
         {
-            // TODO customise this device description
             get
             {
                 LogMessage("Description Get", driverDescription);
@@ -590,7 +512,6 @@ namespace ASCOM.SkyHat
 
         public short InterfaceVersion
         {
-            // set by the driver wizard
             get
             {
                 LogMessage("InterfaceVersion Get", "2");
@@ -625,9 +546,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("Altitude Get", "Not implemented");
-                }
 
                 throw new ASCOM.PropertyNotImplementedException("Altitude", false);
             }
@@ -638,9 +557,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("AtHome Get", "Not implemented");
-                }
 
                 throw new ASCOM.PropertyNotImplementedException("AtHome", false);
             }
@@ -651,9 +568,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("AtPark Get", "Not implemented");
-                }
 
                 throw new ASCOM.PropertyNotImplementedException("AtPark", false);
             }
@@ -664,9 +579,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("Azimuth Get", "Not implemented");
-                }
 
                 throw new ASCOM.PropertyNotImplementedException("Azimuth", false);
             }
@@ -677,9 +590,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("CanFindHome Get", false.ToString());
-                }
 
                 return false;
             }
@@ -690,9 +601,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("CanPark Get", false.ToString());
-                }
 
                 return false;
             }
@@ -703,9 +612,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("CanSetAltitude Get", false.ToString());
-                }
 
                 return false;
             }
@@ -716,9 +623,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("CanSetAzimuth Get", false.ToString());
-                }
 
                 return false;
             }
@@ -729,9 +634,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("CanSetPark Get", false.ToString());
-                }
 
                 return false;
             }
@@ -742,9 +645,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("CanSetShutter Get", true.ToString());
-                }
 
                 return true;
             }
@@ -755,9 +656,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("CanSlave Get", false.ToString());
-                }
 
                 return false;
             }
@@ -768,9 +667,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("CanSyncAzimuth Get", false.ToString());
-                }
 
                 return false;
             }
@@ -812,8 +709,17 @@ namespace ASCOM.SkyHat
             {
                 SerialCommand_Get();
 
-                switch (Properties.Settings.Default.Move)
+                switch (part)
                 {
+                    default:
+                        if (DEBUG >= 3)
+                            LogMessage("ShutterStatus", "unknown part: "+ part);
+
+                        if (DEBUG >= 1)
+                            LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+
+                        return ShutterState.shutterError;
+
                     case 'l':
                         switch (moveLeftTo)
                         {
@@ -821,27 +727,37 @@ namespace ASCOM.SkyHat
                                 switch (statusLeft)
                                 {
                                     case (byte)'c':
-                                        LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
+                                        if (DEBUG >= 1)
+                                            LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
+
                                         return ShutterState.shutterClosed;
 
                                     case (byte)'o':
-                                        LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
+                                        if (DEBUG >= 1)
+                                            LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
+
                                         return ShutterState.shutterOpen;
 
                                     // case (byte)'g': // не может быть GAP при открытии только одной створки
                                     // case (byte)'t': // ошибка таймаута
                                     // case (byte)'u': // начальный непонятный статус
                                     default:
-                                        LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+                                        if (DEBUG >= 1)
+                                            LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+
                                         return ShutterState.shutterError;
                                 }
 
                             case (byte)'o':
-                                LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
+                                if (DEBUG >= 1)
+                                    LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
+
                                 return ShutterState.shutterOpening;
 
                             case (byte)'c':
-                                LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
+                                if (DEBUG >= 1)
+                                    LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
+
                                 return ShutterState.shutterClosing;
                         }
                         break;
@@ -853,38 +769,50 @@ namespace ASCOM.SkyHat
                                 switch (statusRight)
                                 {
                                     case (byte)'c':
-                                        LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
+                                        if (DEBUG >= 1)
+                                            LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
+
                                         return ShutterState.shutterClosed;
 
                                     case (byte)'o':
-                                        LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
+                                        if (DEBUG >= 1)
+                                            LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
+
                                         return ShutterState.shutterOpen;
 
                                     // case (byte)'g': // не может быть GAP при открытии только одной створки
                                     // case (byte)'t': // ошибка таймаута
                                     // case (byte)'u': // начальный непонятный статус
                                     default:
-                                        LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+                                        if (DEBUG >= 1)
+                                            LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+
                                         return ShutterState.shutterError;
                                 }
 
                             case (byte)'o':
-                                LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
+                                if (DEBUG >= 1)
+                                    LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
+
                                 return ShutterState.shutterOpening;
 
                             case (byte)'c':
-                                LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
+                                if (DEBUG >= 1)
+                                    LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
+
                                 return ShutterState.shutterClosing;
                         }
 
                         break;
 
-                    case 'a':
+                    case 'b':
                         // TODO сделал left и right створки. Не проверял both
 
                         if ((statusLeft == 't') || (statusRight == 't'))
                         {
-                            LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+                            if (DEBUG >= 1)
+                                LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+
                             return ShutterState.shutterError;
                         }
 
@@ -892,33 +820,45 @@ namespace ASCOM.SkyHat
                         {
                             if ((statusLeft == 'o') && (statusRight == 'o'))
                             {
-                                LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
+                                if (DEBUG >= 1)
+                                    LogMessage("ShutterStatus", ShutterState.shutterOpen.ToString());
+
                                 return ShutterState.shutterOpen;
                             }
                             if ((statusLeft == 'c') && (statusRight == 'c'))
                             {
-                                LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
+                                if (DEBUG >= 1)
+                                    LogMessage("ShutterStatus", ShutterState.shutterClosed.ToString());
+
                                 return ShutterState.shutterClosed;
                             }
 
-                            LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+                            if (DEBUG >= 1)
+                                LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+
                             return ShutterState.shutterError;
                         }
 
                         if ((moveLeftTo == 'o') || (moveRightTo == 'o'))
                         {
-                            LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
+                            if (DEBUG >= 1)
+                                LogMessage("ShutterStatus", ShutterState.shutterOpening.ToString());
+
                             return ShutterState.shutterOpening;
                         }
                         if ((moveLeftTo == 'c') || (moveRightTo == 'c'))
                         {
-                            LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
+                            if (DEBUG >= 1)
+                                LogMessage("ShutterStatus", ShutterState.shutterClosing.ToString());
+
                             return ShutterState.shutterClosing;
                         }
                         break;
                 }
 
-                LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+                if (DEBUG >= 1)
+                    LogMessage("ShutterStatus", ShutterState.shutterError.ToString());
+
                 return ShutterState.shutterError;
             }
         }
@@ -927,28 +867,33 @@ namespace ASCOM.SkyHat
         {
             get
             {
-                if (DEBUG >= 3) { 
+                if (DEBUG >= 3)
                     LogMessage("Slaved Get", false.ToString());
-                }
 
                 return false;
             }
             set
             {
-                LogMessage("Slaved Set", "not implemented");
+                if (DEBUG >= 1)
+                    LogMessage("Slaved Set", "not implemented");
+                
                 throw new ASCOM.PropertyNotImplementedException("Slaved", true);
             }
         }
 
         public void SlewToAltitude(double Altitude)
         {
-            LogMessage("SlewToAltitude", "Not implemented");
+            if (DEBUG >= 2)
+                LogMessage("SlewToAltitude", "Not implemented");
+
             throw new ASCOM.MethodNotImplementedException("SlewToAltitude");
         }
 
         public void SlewToAzimuth(double Azimuth)
         {
-            LogMessage("SlewToAzimuth", "Not implemented");
+            if (DEBUG >= 2)
+                LogMessage("SlewToAzimuth", "Not implemented");
+
             throw new ASCOM.MethodNotImplementedException("SlewToAzimuth");
         }
 
@@ -957,9 +902,7 @@ namespace ASCOM.SkyHat
             get
             {
                 if (DEBUG >= 3)
-                {
                     LogMessage("Slewing Get", false.ToString());
-                }
 
                 return false;
             }
@@ -967,7 +910,9 @@ namespace ASCOM.SkyHat
 
         public void SyncToAzimuth(double Azimuth)
         {
-            LogMessage("SyncToAzimuth", "Not implemented");
+            if (DEBUG >= 2)
+                LogMessage("SyncToAzimuth", "Not implemented");
+
             throw new ASCOM.MethodNotImplementedException("SyncToAzimuth");
         }
 
